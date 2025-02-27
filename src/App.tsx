@@ -8,15 +8,13 @@ function App() {
     title: string;
     body: string;
   }
+
   const [posts, setPosts] = useState<Post[] | []>([]);
   const [formData, setFormData] = useState({
     title: "",
     body: "",
   });
-  const [editId, setEditId] = useState<number>(0);
-  const [currentEditPost, setCurrentEditPost] = useState<Post | undefined>(
-    undefined
-  );
+  const [editId, setEditId] = useState<number | undefined>(undefined); // initialize with undefined
 
   useEffect(() => {
     fetchPosts();
@@ -44,14 +42,33 @@ function App() {
     if (response.status === 201) {
       setPosts([...posts, response.data]);
     }
-    formData.title = "";
-    formData.body = "";
+    setFormData({ title: "", body: "" });
   };
 
   const handleEdit = (id: number) => {
-    const foundPost = posts.find((post) => post.id === id);
-    if (foundPost) {
-      setCurrentEditPost(foundPost);
+    if (editId === id) {
+      // If already editing, trigger save action (e.g., PUT request to update post)
+      // Here, just toggle editId to undefined
+      setEditId(undefined);
+    } else {
+      setEditId(id);
+    }
+  };
+
+  const handleSave = async (post: Post) => {
+    // Simulate a PUT request to save changes (you should replace this with actual API call)
+    const updatedPost = {
+      ...post,
+      title: formData.title,
+      body: formData.body,
+    };
+    const response = await axios.put(
+      `http://localhost:3000/posts/${post.id}`,
+      updatedPost
+    );
+    if (response.status === 200) {
+      setPosts(posts.map((p) => (p.id === post.id ? response.data : p)));
+      setEditId(undefined); // Exit edit mode after saving
     }
   };
 
@@ -62,53 +79,71 @@ function App() {
 
   return (
     <>
+      <form onSubmit={handleSubmit}>
+        <input
+          onChange={handleChange}
+          name="title"
+          value={formData.title}
+          type="text"
+          placeholder="title"
+        />
+        <input
+          onChange={handleChange}
+          name="body"
+          value={formData.body}
+          type="text"
+          placeholder="body"
+        />
+        <button>Submit</button>
+      </form>
       <ul>
-        <form onSubmit={handleSubmit}>
-          <input
-            onChange={handleChange}
-            value={formData.title}
-            name="title"
-            type="text"
-            placeholder="title"
-          />
-          <input
-            onChange={handleChange}
-            value={formData.body}
-            name="body"
-            type="text"
-            placeholder="body"
-          />
-          <button>Submit</button>
-        </form>
         {posts?.map((post) => (
           <li key={post.id}>
-            {
-              <>
-                <h1>
-                  {" "}
-                  {editId === post.id ? (
-                    <input value={currentEditPost?.title} />
-                  ) : (
-                    post.title
-                  )}
-                </h1>
-                <p>
-                  {editId === post.id ? (
-                    <input value={currentEditPost?.body} />
-                  ) : (
-                    post.body
-                  )}
-                </p>
-                <button>Edit</button>
-                <button onClick={() => handleDelete(post.id)}>
-                  Delete
-                </button>
-              </>
-            }
+            <>
+              <h1>
+                {editId === post.id ? (
+                  <input
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    name="title"
+                    value={formData.title || post.title}
+                  />
+                ) : (
+                  post.title
+                )}
+              </h1>
+              <p>
+                {editId === post.id ? (
+                  <input
+                    onChange={(e) =>
+                      setFormData({ ...formData, body: e.target.value })
+                    }
+                    name="body"
+                    value={formData.body || post.body}
+                  />
+                ) : (
+                  post.body
+                )}
+              </p>
+
+              <button
+                onClick={() =>
+                  editId === post.id
+                    ? handleSave(post)
+                    : handleEdit(post.id)
+                }
+              >
+                {editId === post.id ? "Save" : "Edit"}
+              </button>
+
+              <button onClick={() => handleDelete(post.id)}>Delete</button>
+            </>
           </li>
         ))}
       </ul>
     </>
   );
 }
+
 export default App;
