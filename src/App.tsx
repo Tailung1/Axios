@@ -18,11 +18,11 @@ export default function App() {
     name: "",
     color: "",
   });
+  const fetchData = async () => {
+    const response = await axios.get("http://localhost:3000/posts");
+    if (response.status === 200) setFechedData(response.data);
+  };
   useEffect(() => {
-    const fetchData = async () => {
-      const response = await axios.get("http://localhost:3000/posts");
-      if (response.status === 200) setFechedData(response.data);
-    };
     fetchData();
   }, []);
 
@@ -33,7 +33,10 @@ export default function App() {
     }));
   };
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+    if (newPost.name === "" || newPost.color === "") {
+      e.preventDefault();
+      return;
+    }
     const response = await axios.post(
       "http://localhost:3000/posts/",
       newPost
@@ -42,6 +45,12 @@ export default function App() {
     setNewPost({ name: "", color: "" });
   };
 
+  const handleDelete = (id:string) => {
+    axios.delete(`http://localhost:3000/posts/${id}`),
+      setFechedData(
+        fechedData?.filter((post) => post.id !==id )
+      );
+  };
   return (
     <div>
       <form onSubmit={handleSubmit}>
@@ -62,9 +71,15 @@ export default function App() {
       <div>
         {fechedData?.map((post) => (
           <div key={post.id}>
-            <h1>{post.name}</h1> <p>{post.color}</p>{" "}
+            <h1>{post.name}</h1> <h3>{post.color}</h3>{" "}
             <button>Edit</button>
-            <button>Delete</button>
+            <button
+              onClick={() => {
+                handleDelete(post.id);
+              }}
+            >
+              Delete
+            </button>
           </div>
         ))}
       </div>
