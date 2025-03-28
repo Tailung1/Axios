@@ -1,149 +1,73 @@
-import { useEffect, useState } from "react";
+import React, { FormEvent, useEffect, useState } from "react";
 import axios from "axios";
-import "./App.css";
 
-function App() {
-  interface Post {
-    id: number;
-    title: string;
-    body: string;
-  }
-
-  const [posts, setPosts] = useState<Post[] | []>([]);
-  const [formData, setFormData] = useState({
-    title: "",
-    body: "",
+interface postTypes {
+  name: string;
+  color: string;
+}
+interface getPostTypes {
+  name: string;
+  color: string;
+  id: string;
+}
+export default function App() {
+  const [fechedData, setFechedData] = useState<
+    getPostTypes[] | undefined
+  >(undefined);
+  const [newPost, setNewPost] = useState<postTypes>({
+    name: "",
+    color: "",
   });
-  const [editId, setEditId] = useState<number | undefined>(undefined); // initialize with undefined
-
   useEffect(() => {
-    fetchPosts();
+    const fetchData = async () => {
+      const response = await axios.get("http://localhost:3000/posts");
+      if (response.status === 200) setFechedData(response.data);
+    };
+    fetchData();
   }, []);
 
-  const fetchPosts = async () => {
-    const response = await axios.get("http://localhost:3000/posts");
-    const data = response.data;
-    setPosts(data);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prevFormData) => ({
-      ...prevFormData,
+  const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewPost((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
     }));
   };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const response = await axios.post(
-      "http://localhost:3000/posts",
-      formData
+      "http://localhost:3000/posts/",
+      newPost
     );
-    if (response.status === 201) {
-      setPosts([...posts, response.data]);
-    }
-    setFormData({ title: "", body: "" });
-  };
-
-  const handleEdit = (id: number) => {
-    if (editId === id) {
-      // If already editing, trigger save action (e.g., PUT request to update post)
-      // Here, just toggle editId to undefined
-      setEditId(undefined);
-    } else {
-      setEditId(id);
-    }
-  };
-
-  const handleSave = async (post: Post) => {
-    // Simulate a PUT request to save changes (you should replace this with actual API call)
-    const updatedPost = {
-      ...post,
-      title: formData.title,
-      body: formData.body,
-    };
-    const response = await axios.put(
-      `http://localhost:3000/posts/${post.id}`,
-      updatedPost
-    );
-    if (response.status === 200) {
-      setPosts(posts.map((p) => (p.id === post.id ? response.data : p)));
-      setEditId(undefined); // Exit edit mode after saving
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    await axios.delete(`http://localhost:3000/posts/${id}`);
-    setPosts(posts.filter((post) => post.id !== id));
+    if (response.status === 200) setFechedData(response.data);
+    setNewPost({ name: "", color: "" });
   };
 
   return (
-    <>
+    <div>
       <form onSubmit={handleSubmit}>
         <input
-          onChange={handleChange}
-          name="title"
-          value={formData.title}
-          type="text"
-          placeholder="title"
+          type='text'
+          name='name'
+          value={newPost.name}
+          onChange={handleOnChange}
         />
         <input
-          onChange={handleChange}
-          name="body"
-          value={formData.body}
-          type="text"
-          placeholder="body"
+          type='text'
+          name='color'
+          value={newPost.color}
+          onChange={handleOnChange}
         />
-        <button>Submit</button>
+        <button type='submit'>Submit</button>
       </form>
-      <ul>
-        {posts?.map((post) => (
-          <li key={post.id}>
-            <>
-              <h1>
-                {editId === post.id ? (
-                  <input
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    name="title"
-                    value={formData.title || post.title}
-                  />
-                ) : (
-                  post.title
-                )}
-              </h1>
-              <p>
-                {editId === post.id ? (
-                  <input
-                    onChange={(e) =>
-                      setFormData({ ...formData, body: e.target.value })
-                    }
-                    name="body"
-                    value={formData.body || post.body}
-                  />
-                ) : (
-                  post.body
-                )}
-              </p>
-
-              <button
-                onClick={() =>
-                  editId === post.id
-                    ? handleSave(post)
-                    : handleEdit(post.id)
-                }
-              >
-                {editId === post.id ? "Save" : "Edit"}
-              </button>
-
-              <button onClick={() => handleDelete(post.id)}>Delete</button>
-            </>
-          </li>
+      <div>
+        {fechedData?.map((post) => (
+          <div key={post.id}>
+            <h1>{post.name}</h1> <p>{post.color}</p>{" "}
+            <button>Edit</button>
+            <button>Delete</button>
+          </div>
         ))}
-      </ul>
-    </>
+      </div>
+    </div>
   );
 }
-
-export default App;
